@@ -213,14 +213,15 @@ export default function EburonApp() {
 
   useEffect(() => {
     if (bgAudioRef.current) {
-      bgAudioRef.current.volume = 0.15;
+      // Duck bg audio to near-silent when mic is live so AI never hears it
+      bgAudioRef.current.volume = micState ? 0.05 : 0.15;
       if (connected) {
         bgAudioRef.current.play().catch(err => console.log("Bg audio play blocked until interaction:", err));
       } else {
         bgAudioRef.current.pause();
       }
     }
-  }, [connected]);
+  }, [connected, micState]);
 
   useEffect(() => {
     const onVolume = (vol: number) => {
@@ -1446,8 +1447,8 @@ Output only natural spoken text. No stage directions, no brackets, no role label
       <div className="bottom-dock">
         <div className="input-wrapper">
           <div className="input-bar">
-            <button className="attach-btn" onClick={() => fileInputRef.current?.click()}><Paperclip size={20} /></button>
-            <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleFileUpload} />
+            <button className="attach-btn" title="Attach file" onClick={() => fileInputRef.current?.click()}><Paperclip size={20} /></button>
+            <input type="file" ref={fileInputRef} title="Upload file" style={{ display: 'none' }} accept="image/*" onChange={handleFileUpload} />
             <input
               type="text"
               id="message-input"
@@ -1456,7 +1457,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
               autoComplete="off" />
-            <button id="send-button" className="send-btn" onClick={handleSend}><Send size={18} /></button>
+            <button id="send-button" className="send-btn" title="Send message" onClick={handleSend}><Send size={18} /></button>
           </div>
         </div>
         <nav className="nav-controls">
@@ -1530,7 +1531,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
           <div className="overlay-title">
             {isWorkspaceGenerating ? 'Generating...' : activeWorkspaceResult?.artifact ? `Artifact: ${activeWorkspaceResult.artifact.title}` : 'Workspace Data'}
           </div>
-          <button className="close-overlay-btn" onClick={() => { setActiveWorkspaceResult(null); useUI.getState().setWorkspaceGenerating(false); }}><X size={20} /></button>
+          <button className="close-overlay-btn" title="Close workspace" onClick={() => { setActiveWorkspaceResult(null); useUI.getState().setWorkspaceGenerating(false); }}><X size={20} /></button>
         </div>
         <div className={`overlay-content ${!isWorkspaceGenerating && activeWorkspaceResult ? 'fade-in-up' : ''}`} style={{ overflowY: activeWorkspaceResult?.artifact?.type === 'html' ? 'hidden' : 'auto', padding: activeWorkspaceResult?.artifact?.type === 'html' ? '0' : '24px' }}>
           {isWorkspaceGenerating ? (
@@ -1582,7 +1583,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
       <div id="overlay-profile" className={`full-page-overlay ${activeOverlay === 'profile' ? 'active' : ''}`}>
         <div className="overlay-header">
           <div className="overlay-title">User Profile</div>
-          <button className="close-overlay-btn" onClick={() => setActiveOverlay(null)}><i className="ph-bold ph-x"></i></button>
+          <button className="close-overlay-btn" title="Close profile" onClick={() => setActiveOverlay(null)}><i className="ph-bold ph-x"></i></button>
         </div>
         <div className="overlay-content">
           <div style={{ textAlign: 'center', marginBottom: '24px' }}>
@@ -1631,7 +1632,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
                     autoFocus
                   />
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <select className="form-input" style={{ width: '120px', padding: '4px', fontSize: '12px', height: 'auto' }} value={newMemoryType} onChange={(e) => setNewMemoryType(e.target.value)}>
+                    <select className="form-input" title="Memory type" style={{ width: '120px', padding: '4px', fontSize: '12px', height: 'auto' }} value={newMemoryType} onChange={(e) => setNewMemoryType(e.target.value)}>
                       <option value="personal">Personal</option>
                       <option value="work">Work</option>
                       <option value="project">Project</option>
@@ -1661,7 +1662,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
                           autoFocus
                         />
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <select className="form-input" style={{ width: '120px', padding: '4px', fontSize: '12px', height: 'auto' }} value={editingMemoryType} onChange={(e) => setEditingMemoryType(e.target.value)}>
+                          <select className="form-input" title="Memory type" style={{ width: '120px', padding: '4px', fontSize: '12px', height: 'auto' }} value={editingMemoryType} onChange={(e) => setEditingMemoryType(e.target.value)}>
                             <option value="personal">Personal</option>
                             <option value="work">Work</option>
                             <option value="project">Project</option>
@@ -1685,7 +1686,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                           <span style={{ fontSize: '13px', lineHeight: '1.4', flex: 1 }}>{m.content}</span>
                           <div style={{ display: 'flex', gap: '4px', marginLeft: '12px' }}>
-                            <button
+                            <button title="Edit memory"
                               className="icon-btn"
                               style={{ color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer' }}
                               onClick={() => {
@@ -1696,7 +1697,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
                             >
                               <Pencil size={14} />
                             </button>
-                            <button
+                            <button title="Delete memory"
                               className="icon-btn"
                               style={{ color: '#ff4d4d', background: 'transparent', border: 'none', cursor: 'pointer' }}
                               onClick={() => handleDeleteMemory(m.id)}
@@ -1758,16 +1759,16 @@ Output only natural spoken text. No stage directions, no brackets, no role label
       <div id="overlay-settings" className={`full-page-overlay ${activeOverlay === 'settings' ? 'active' : ''}`}>
         <div className="overlay-header">
           <div className="overlay-title">App Settings</div>
-          <button className="close-overlay-btn" onClick={() => setActiveOverlay(null)}><X size={20} /></button>
+          <button className="close-overlay-btn" title="Close settings" onClick={() => setActiveOverlay(null)}><X size={20} /></button>
         </div>
         <div className="overlay-content">
           <div className="form-group">
             <label>Persona Name</label>
-            <input type="text" className="form-input" value={personaName || ''} onChange={(e) => setPersonaName(e.target.value)} />
+            <input type="text" className="form-input" title="Persona name" placeholder="Enter persona name" value={personaName || ''} onChange={(e) => setPersonaName(e.target.value)} />
           </div>
           <div className="form-group">
             <label>How to call you</label>
-            <input type="text" className="form-input" value={userCallName || ''} onChange={(e) => setUserCallName(e.target.value)} />
+            <input type="text" className="form-input" title="How to call you" placeholder="What should Beatrice call you?" value={userCallName || ''} onChange={(e) => setUserCallName(e.target.value)} />
           </div>
 
           <div className="form-group">
@@ -1810,7 +1811,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
 
           <div className="form-group">
             <label>Voice Persona</label>
-            <select className="form-input" onChange={(e) => setVoice(e.target.value)} value={voice || ''}>
+            <select className="form-input" title="Voice persona" onChange={(e) => setVoice(e.target.value)} value={voice || ''}>
               <option value="Aoede">Aoede</option>
               <option value="Charon">Charon</option>
               <option value="Fenrir">Fenrir</option>
@@ -1820,7 +1821,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
           </div>
           <div className="form-group">
             <label>Language</label>
-            <select className="form-input" onChange={(e) => setLanguage(e.target.value)} value={language || ''}>
+            <select className="form-input" title="Language" onChange={(e) => setLanguage(e.target.value)} value={language || ''}>
               {LANGUAGES.map((lang) => (
                 <option key={lang} value={lang}>{lang}</option>
               ))}
@@ -1866,7 +1867,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
       <div id="overlay-history" className={`full-page-overlay ${activeOverlay === 'history' ? 'active' : ''}`}>
         <div className="overlay-header">
           <div className="overlay-title">Activity History</div>
-          <button className="close-overlay-btn" onClick={() => setActiveOverlay(null)}><X size={20} /></button>
+          <button className="close-overlay-btn" title="Close history" onClick={() => setActiveOverlay(null)}><X size={20} /></button>
         </div>
 
         <div className="history-filters" style={{ padding: '16px 24px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1882,13 +1883,13 @@ Output only natural spoken text. No stage directions, no brackets, no role label
             />
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <select className="form-input" style={{ width: 'auto', flex: 1, height: '40px' }} value={historyRoleFilter} onChange={(e) => setHistoryRoleFilter(e.target.value as any)}>
+            <select className="form-input" title="Filter by role" style={{ width: 'auto', flex: 1, height: '40px' }} value={historyRoleFilter} onChange={(e) => setHistoryRoleFilter(e.target.value as any)}>
               <option value="all">Every Role</option>
               <option value="user">User Only</option>
               <option value="agent">Agent Only</option>
               <option value="system">Tools Only</option>
             </select>
-            <select className="form-input" style={{ width: 'auto', flex: 1, height: '40px' }} value={historyDateRange} onChange={(e) => setHistoryDateRange(e.target.value as any)}>
+            <select className="form-input" title="Filter by date" style={{ width: 'auto', flex: 1, height: '40px' }} value={historyDateRange} onChange={(e) => setHistoryDateRange(e.target.value as any)}>
               <option value="all">All Sessions</option>
               <option value="today">Today</option>
               <option value="week">This Week</option>
@@ -2004,11 +2005,12 @@ Output only natural spoken text. No stage directions, no brackets, no role label
       <div id="overlay-map" className={`full-page-overlay ${activeOverlay === 'map' ? 'active' : ''}`}>
         <div className="overlay-header">
           <div className="overlay-title">Navigation Map</div>
-          <button className="close-overlay-btn" onClick={() => setActiveOverlay(null)}><X size={20} /></button>
+          <button className="close-overlay-btn" title="Close map" onClick={() => setActiveOverlay(null)}><X size={20} /></button>
         </div>
         <div className="overlay-content" style={{ padding: 0, overflow: 'hidden' }}>
           {mapUrl && (
             <iframe
+              title="Navigation Map"
               src={mapUrl}
               width="100%"
               height="100%"
@@ -2025,7 +2027,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
       <div id="overlay-picker" className={`full-page-overlay ${activeOverlay === 'picker' ? 'active' : ''}`}>
         <div className="overlay-header">
           <div className="overlay-title">Google Drive Picker</div>
-          <button className="close-overlay-btn" onClick={() => setActiveOverlay(null)}><X size={20} /></button>
+          <button className="close-overlay-btn" title="Close picker" onClick={() => setActiveOverlay(null)}><X size={20} /></button>
         </div>
         <div className="overlay-content" style={{ padding: '24px' }}>
           {isDriveLoading ? (
@@ -2053,7 +2055,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
       <div id="overlay-whatsapp" className={`full-page-overlay ${activeOverlay === 'whatsapp' ? 'active' : ''}`}>
         <div className="overlay-header">
           <div className="overlay-title">Connect WhatsApp</div>
-          <button className="close-overlay-btn" onClick={() => setActiveOverlay(null)}><X size={20} /></button>
+          <button className="close-overlay-btn" title="Close WhatsApp" onClick={() => setActiveOverlay(null)}><X size={20} /></button>
         </div>
         <div
           className="overlay-content"
@@ -2313,7 +2315,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
                     onChange={(e) => setWhatsappInputText(e.target.value)}
                     style={{ flex: 1, background: '#2a3942', border: 'none', borderRadius: '8px', padding: '8px 12px', color: '#fff', fontSize: '14px', outline: 'none' }}
                   />
-                  <button type="submit" style={{ background: 'none', border: 'none', color: '#8696a0', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                  <button type="submit" title="Send WhatsApp message" style={{ background: 'none', border: 'none', color: '#8696a0', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                     <Send size={20} />
                   </button>
                 </form>
@@ -2372,7 +2374,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
             <QrCode size={20} color="var(--accent-active)" />
             Supermarket Scanner
           </div>
-          <button className="close-overlay-btn" onClick={() => setActiveOverlay(null)}><X size={20} /></button>
+          <button className="close-overlay-btn" title="Close scanner" onClick={() => setActiveOverlay(null)}><X size={20} /></button>
         </div>
         <div className="overlay-content" style={{ padding: '24px', backgroundColor: 'var(--bg-main)' }}>
           <div className="scanner-container">
@@ -2392,6 +2394,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
                 Translate to Language:
               </label>
               <select
+                title="Translation language"
                 className="form-input"
                 style={{ width: '100%', padding: '12px 16px', borderRadius: '12px' }}
                 value={scannerLanguage}
@@ -2800,7 +2803,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
       <div id="overlay-tools" className={`full-page-overlay ${activeOverlay === 'tools' ? 'active' : ''}`}>
         <div className="overlay-header">
           <div className="overlay-title">Integrations</div>
-          <button className="close-overlay-btn" onClick={() => setActiveOverlay(null)}><X size={20} /></button>
+          <button className="close-overlay-btn" title="Close integrations" onClick={() => setActiveOverlay(null)}><X size={20} /></button>
         </div>
         <div className="overlay-content" style={{ padding: '24px' }}>
           <div style={{ display: 'grid', gap: '12px' }}>
@@ -2817,7 +2820,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
                   </div>
                   <div style={{ marginLeft: 'auto' }}>
                     <label className="switch">
-                      <input type="checkbox" checked={tool.isEnabled} onChange={() => useTools.getState().toggleTool(tool.name)} />
+                      <input type="checkbox" title={`Toggle ${tool.name}`} checked={tool.isEnabled} onChange={() => useTools.getState().toggleTool(tool.name)} />
                       <span className="slider round"></span>
                     </label>
                   </div>
@@ -2848,7 +2851,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
                   <input type="text" placeholder="Full name" value={name || ''} onChange={e => setName(e.target.value)} />
                 </div>
                 <div className="auth-input-wrapper">
-                  <select
+                  <select title="Select language"
                     style={{
                       width: '100%',
                       background: 'transparent',
@@ -2941,7 +2944,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
           }}>
             <div style={{ padding: '20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Save to Memory?</h3>
-              <button onClick={() => setPendingMemory(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
+              <button title="Dismiss" onClick={() => setPendingMemory(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
             </div>
             <div style={{ padding: '24px' }}>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>Beatrice wants to store a new memory of this insight:</p>
@@ -3030,7 +3033,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
           }}>
             <div style={{ padding: '20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Send Chat Message?</h3>
-              <button onClick={() => setPendingChat(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
+              <button title="Dismiss" onClick={() => setPendingChat(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
             </div>
             <div style={{ padding: '24px' }}>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>Eburon wants to send this message to space <strong>{pendingChat.spaceName}</strong>:</p>
