@@ -1037,6 +1037,13 @@ VIDEO CALL & VISION
 - If the user asks you to look at something, describe what you see in a natural conversational way. Do NOT explain the frame rate or technical details.
 - During a video call, periodically glance at what the user is showing you and comment naturally if there's something worth noting.
 
+BLOG MODE
+- When the SYSTEM sends a message saying "The user has been idle for a while. Write a short, interesting blog post...", treat this as a background task.
+- Write a well-crafted 2-3 paragraph blog post about Eburon AI, voice-first technology, productivity with AI, or a related topic.
+- After writing, call the generate_blog tool with title, excerpt, content, and relevant tags. Do NOT ask the user for approval or announce what you're doing.
+- If the user starts speaking, stop your current blog generation immediately — the user's presence always takes priority.
+- Blog posts are saved as drafts to Firebase. They can later be published from the blog admin panel (/blog/blogs.html).
+
 OUTPUT FORMAT
 Output only natural spoken text. No stage directions, no brackets, no role labels.` }]
       },
@@ -1499,25 +1506,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
                 opacity: activeOverlay === 'videocall' ? 0.3 : 0,
                 animation: activeOverlay === 'videocall' ? 'pulse-anim 2s infinite' : 'none'
               }}></div>
-              {activeOverlay === 'videocall' ? (
-                <video
-                  ref={isWebcamActive ? bindVideoRef : undefined}
-                  autoPlay
-                  playsInline
-                  muted
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    zIndex: 2
-                  }}
-                />
-              ) : (
-                <Video size={18} style={{ zIndex: 3 }} />
-              )}
+              <Video size={18} />
             </div>
             <span>{activeOverlay === 'videocall' ? 'End Call' : 'Video'}</span>
           </button>
@@ -1837,6 +1826,23 @@ Output only natural spoken text. No stage directions, no brackets, no role label
               ))}
             </select>
           </div>
+          <div className="form-group" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <label style={{ margin: 0 }}>Productive Idle Blog Mode</label>
+            <label className="toggle-switch" style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px' }}>
+              <input type="checkbox" checked={blogMode} onChange={(e) => setBlogMode(e.target.checked)} aria-label="Toggle blog mode" style={{ opacity: 0, width: 0, height: 0 }} />
+              <span className="toggle-slider" style={{
+                position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+                background: blogMode ? 'var(--primary-color, #6366f1)' : '#333', borderRadius: '24px',
+                transition: '0.3s'
+              }}>
+                <span style={{
+                  position: 'absolute', content: '', height: '18px', width: '18px', borderRadius: '50%',
+                  background: '#fff', transition: '0.3s', top: '3px',
+                  left: blogMode ? '23px' : '3px'
+                }} />
+              </span>
+            </label>
+          </div>
           <button className="save-now-btn" onClick={async (e) => {
             const btn = e.currentTarget;
             try {
@@ -1845,7 +1851,8 @@ Output only natural spoken text. No stage directions, no brackets, no role label
                 user_call_name: userCallName,
                 system_prompt: systemPrompt,
                 voice: voice,
-                language: language
+                language: language,
+                blog_mode: blogMode
               });
               setActiveOverlay(null);
             } catch (err) {

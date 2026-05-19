@@ -1019,6 +1019,8 @@ async function startServer() {
       appType: "spa",
     });
     app.use(vite.middlewares);
+    // Vite middleware mode doesn't serve public/ — do it explicitly
+    app.use(express.static(path.join(process.cwd(), 'public')));
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
